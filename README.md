@@ -23,7 +23,6 @@ pip install git+https://github.com/WoolenSweater/es-log-handler
 
 ### Requirements
 
-* [requests](https://github.com/psf/requests)
 * [elasticsearch](https://github.com/elastic/elasticsearch-py)
 
 ### Log format
@@ -69,22 +68,15 @@ If message is dict, dict unpack in root of record:
 
 ```python
 import logging
-from esloghandler import ESHandler, AuthType, IndexNameFreq
+from esloghandler import ESHandler
 
 log = logging.getLogger("important_info")
 log.setLevel(logging.DEBUG)
-log.addHandler(ESHandler(hosts=[{'host': 'localhost', 'port': 9200}],
-                         auth_type=AuthType.BASIC_AUTH,
+log.addHandler(ESHandler(hosts=[{'host': 'elstic_host', 'port': 9200}],
+                         auth_type='BASIC_AUTH',
                          auth_details=('my_login', 'my_pass'),
-                         use_ssl=False,
-                         verify_ssl=True,
-                         buffer_size=1000,
-                         flush_frequency_in_sec=1,
                          es_index_name='app-dev-test-service',
-                         es_index_name_frequency=IndexNameFreq.WEEKLY,
-                         es_additional_fields={'additional_filed': 'if_need'},
-                         backup_filepath='./logs/backup.log',
-                         raise_on_exceptions=False))
+                         es_index_name_frequency='WEEKLY'))
 log.info('Hello World')
 log.info({'job': 123, 'done': True})
 log.exception('Alarm')

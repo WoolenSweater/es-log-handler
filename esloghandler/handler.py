@@ -3,49 +3,29 @@ from json import loads, dumps
 from threading import Thread, Lock, Event
 from traceback import format_exception as fmtex
 from elasticsearch import helpers as eshelpers
-from elasticsearch import Elasticsearch, RequestsHttpConnection
-from .utils import (AuthType, IndexNameFreq, ESSerializer,
-                    _get_daily_index_name, _get_weekly_index_name,
-                    _get_monthly_index_name, _get_yearly_index_name,
-                    _get_never_index_name, _get_es_datetime_str)
+from elasticsearch import Elasticsearch, Urllib3HttpConnection
+from .utils import (AuthType, IndexNameFreq, ESSerializer, InvalidESIndexName,
+                    INDEX_NAME_FUNC_DICT, _get_es_datetime_str)
 
 
 class ESHandler(logging.Handler):
-    __DEFAULT_ELASTICSEARCH_HOST = [{'host': 'localhost', 'port': 9200}]
-    __DEFAULT_AUTH_TYPE = AuthType.NO_AUTH
-    __DEFAULT_AUTH_USER = ''
-    __DEFAULT_AUTH_PASSWD = ''
-    __DEFAULT_USE_SSL = False
-    __DEFAULT_VERIFY_SSL = True
-    __DEFAULT_BUFFER_SIZE = 1000
-    __DEFAULT_FLUSH_FREQ_INSEC = 1
-    __DEFAULT_ADDITIONAL_FIELDS = {}
-    __DEFAULT_ES_INDEX_NAME = 'python-logger'
-    __DEFAULT_ES_INDEX_FREQUENCY = IndexNameFreq.DAILY
-    __DEFAULT_RAISE_ON_EXCEPTION = False
-    __DEFAULT_BACKUP_FILEPATH = 'backup.log'
-
-    _INDEX_NAME_FUNC_DICT = {
-        IndexNameFreq.DAILY: _get_daily_index_name,
-        IndexNameFreq.WEEKLY: _get_weekly_index_name,
-        IndexNameFreq.MONTHLY: _get_monthly_index_name,
-        IndexNameFreq.YEARLY: _get_yearly_index_name,
-        IndexNameFreq.NEVER: _get_never_index_name
-    }
-
     def __init__(self,
-                 hosts=__DEFAULT_ELASTICSEARCH_HOST,
-                 auth_details=(__DEFAULT_AUTH_USER, __DEFAULT_AUTH_PASSWD),
-                 auth_type=__DEFAULT_AUTH_TYPE,
-                 use_ssl=__DEFAULT_USE_SSL,
-                 verify_ssl=__DEFAULT_VERIFY_SSL,
-                 buffer_size=__DEFAULT_BUFFER_SIZE,
-                 flush_frequency_in_sec=__DEFAULT_FLUSH_FREQ_INSEC,
-                 es_index_name=__DEFAULT_ES_INDEX_NAME,
-                 es_index_name_frequency=__DEFAULT_ES_INDEX_FREQUENCY,
-                 es_additional_fields=__DEFAULT_ADDITIONAL_FIELDS,
-                 raise_on_exceptions=__DEFAULT_RAISE_ON_EXCEPTION,
-                 backup_filepath=__DEFAULT_BACKUP_FILEPATH):
+                 *,
+                 hosts=[{'host': 'localhost', 'port': 9200}],
+                 auth_type=AuthType.NO_AUTH,
+                 auth_details=None,
+                 use_ssl=False,
+                 verify_ssl=True,
+                 buffer_size=1000,
+                 connection=Urllib3HttpConnection,
+                 flush_frequency_in_sec=1,
+                 es_index_name=None,
+                 es_index_name_frequency=IndexNameFreq.DAILY,
+                 es_additional_fields={},
+                 raise_on_exceptions=False,
+                 backup_filepath='backup.log'):
+        if not isinstance(es_index_name, str):
+            raise InvalidESIndexName
         logging.Handler.__init__(self)
 
         self.hosts = hosts
@@ -62,6 +42,7 @@ class ESHandler(logging.Handler):
         self._buffer = []
         self._buffer_lock = Lock()
         self._buffer_size = buffer_size
+        self._connection_class = connection
         self._flush_frequency = flush_frequency_in_sec
         self._idx_name_func = self.__get_idx_name_func(es_index_name_frequency)
         self._raise_on_exceptions = raise_on_exceptions
@@ -77,8 +58,8 @@ class ESHandler(logging.Handler):
 
     def __get_idx_name_func(self, param):
         if isinstance(param, str):
-            return self._INDEX_NAME_FUNC_DICT[IndexNameFreq[param]]
-        return self._INDEX_NAME_FUNC_DICT[param]
+            return INDEX_NAME_FUNC_DICT[IndexNameFreq[param]]
+        return INDEX_NAME_FUNC_DICT[param]
 
     def __get_auth_details(self, param):
         if isinstance(param, str):
@@ -107,7 +88,7 @@ class ESHandler(logging.Handler):
             'hosts': self.hosts,
             'use_ssl': self.use_ssl,
             'verify_certs': self.verify_certs,
-            'connection_class': RequestsHttpConnection,
+            'connection_class': self._connection_class,
             'serializer': ESSerializer()
         }
 

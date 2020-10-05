@@ -9,11 +9,11 @@ class AuthType(Enum):
 
 
 class IndexNameFreq(Enum):
-    DAILY = 0
-    WEEKLY = 1
-    MONTHLY = 2
-    YEARLY = 3
-    NEVER = 4
+    NEVER = 0
+    DAILY = 1
+    WEEKLY = 2
+    MONTHLY = 3
+    YEARLY = 4
 
 
 class ESSerializer(JSONSerializer):
@@ -22,6 +22,11 @@ class ESSerializer(JSONSerializer):
             return super(ESSerializer, self).default(data)
         except TypeError:
             return str(data)
+
+
+class InvalidESIndexName(Exception):
+    def __init__(self):
+        super().__init__('Index name must be a string')
 
 
 def _get_daily_index_name(es_index_name):
@@ -48,3 +53,12 @@ def _get_never_index_name(es_index_name):
 
 def _get_es_datetime_str(ts):
     return dt.utcfromtimestamp(ts).isoformat(timespec='milliseconds')
+
+
+INDEX_NAME_FUNC_DICT = {
+    IndexNameFreq.DAILY: _get_daily_index_name,
+    IndexNameFreq.WEEKLY: _get_weekly_index_name,
+    IndexNameFreq.MONTHLY: _get_monthly_index_name,
+    IndexNameFreq.YEARLY: _get_yearly_index_name,
+    IndexNameFreq.NEVER: _get_never_index_name
+}
