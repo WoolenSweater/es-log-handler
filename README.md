@@ -10,8 +10,7 @@ This library provides an Elasticsearch logging appender compatible with the pyth
 ### Several big differences:
 
 * Requirement Python >= 3.6
-* No Kerberos Support
-* No AWS Support
+* No Kerberos and AWS inside (if need, create an Elasticsearch client and pass to the handler)
 * Backup of the log to a file on sending error
 * Log format (example below)
 
@@ -31,7 +30,7 @@ If message is string:
 
 ```json
 {
-    "@timestamp": "2020-10-02T07:23:08.595",
+    "@timestamp": "2020-10-02T07:23:08.595Z",
     "log.name": "info",
     "log.level": "INFO",
     "message": "Job is done"
@@ -40,10 +39,9 @@ If message is string:
 
 If exception:
 
-
 ```json
 {
-    "@timestamp": "2020-10-02T09:36:32.209",
+    "@timestamp": "2020-10-02T09:36:32.209Z",
     "log.name": "errors",
     "log.level": "ERROR",
     "message": "Expected Error",
@@ -56,7 +54,7 @@ If message is dict, dict unpack in root of record:
 
 ```json
 {
-    "@timestamp": "2020-10-02T10:23:08.595",
+    "@timestamp": "2020-10-02T10:23:08.595Z",
     "log.name": "info",
     "log.level": "INFO",
     "job": "job_id",

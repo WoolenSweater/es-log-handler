@@ -4,7 +4,7 @@ from threading import Thread, Lock, Event
 from traceback import format_exception as fmtex
 from elasticsearch import helpers as eshelpers
 from elasticsearch import Elasticsearch, Urllib3HttpConnection
-from .utils import (AuthType, IndexNameFreq, ESSerializer, InvalidESIndexName,
+from .utils import (AuthType, IndexNameFreq, ESSerializer,
                     INDEX_NAME_FUNC_DICT, _get_es_datetime_str)
 
 
@@ -19,13 +19,18 @@ class ESHandler(logging.Handler):
                  buffer_size=1000,
                  connection=Urllib3HttpConnection,
                  flush_frequency_in_sec=1,
+                 es_client=None,
                  es_index_name=None,
                  es_index_name_frequency=IndexNameFreq.DAILY,
                  es_additional_fields={},
                  raise_on_exceptions=False,
                  backup_filepath='backup.log'):
         if not isinstance(es_index_name, str):
-            raise InvalidESIndexName
+            raise TypeError('es_index_name must be a string')
+
+        if es_client is not None and not isinstance(es_client, Elasticsearch):
+            raise TypeError('es_client must be Elasticsearch instance or None')
+
         logging.Handler.__init__(self)
 
         self.hosts = hosts
@@ -38,8 +43,8 @@ class ESHandler(logging.Handler):
         self.es_idx_name = es_index_name
         self.es_add_fields = es_additional_fields
 
-        self._client = None
         self._buffer = []
+        self._client = es_client
         self._buffer_lock = Lock()
         self._buffer_size = buffer_size
         self._connection_class = connection

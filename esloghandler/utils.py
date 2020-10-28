@@ -24,11 +24,6 @@ class ESSerializer(JSONSerializer):
             return str(data)
 
 
-class InvalidESIndexName(Exception):
-    def __init__(self):
-        super().__init__('Index name must be a string')
-
-
 def _get_daily_index_name(es_index_name):
     return f'{es_index_name}-{dt.now().strftime("%Y.%m.%d")}'
 
@@ -52,7 +47,7 @@ def _get_never_index_name(es_index_name):
 
 
 def _get_es_datetime_str(ts):
-    return dt.utcfromtimestamp(ts).isoformat(timespec='milliseconds')
+    return f'{dt.utcfromtimestamp(ts).isoformat(timespec="milliseconds")}Z'
 
 
 INDEX_NAME_FUNC_DICT = {
