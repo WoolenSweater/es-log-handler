@@ -1,11 +1,16 @@
 # Elasticsearch Log Handler
 
+![GitHub](https://img.shields.io/github/license/WoolenSweater/es-log-handler)
+![Python](https://img.shields.io/badge/python-%3E%3D3.6-blue)
+
+---
+
 This library provides an Elasticsearch logging appender compatible with the python standard logging library.
 
 ### Inspired by:
 
 * [Original lib (cmanaha)](https://github.com/cmanaha/python-elasticsearch-logger)
-* [Fork lib (innovmetric)](https://github.com/innovmetric/python-elasticsearch-ecs-logger)
+* [Fork lib (IMInterne)](https://github.com/IMInterne/python-elasticsearch-ecs-logger)
 
 ### Several big differences:
 
