@@ -1,4 +1,5 @@
 from enum import Enum
+from json import loads, dumps
 from datetime import timedelta, datetime as dt
 from elasticsearch.serializer import JSONSerializer
 
@@ -14,6 +15,25 @@ class IndexNameFreq(Enum):
     WEEKLY = 2
     MONTHLY = 3
     YEARLY = 4
+
+
+class File:
+    
+    def __init__(self, file):
+        self._file = open(file, mode='a+')
+
+    def read(self):
+        self._file.seek(0)
+        for record in self._file:
+            yield loads(record)
+
+        self._file.seek(0)
+        self._file.truncate()
+
+    def write(self, buffer):
+        for record in buffer:
+            self._file.write(f'{dumps(record)}\n')
+        self._file.flush()
 
 
 class ESSerializer(JSONSerializer):
@@ -50,7 +70,7 @@ def _get_es_datetime_str(ts):
     return f'{dt.utcfromtimestamp(ts).isoformat(timespec="milliseconds")}Z'
 
 
-INDEX_NAME_FUNC_DICT = {
+INDEX_NAME_FUNCS = {
     IndexNameFreq.DAILY: _get_daily_index_name,
     IndexNameFreq.WEEKLY: _get_weekly_index_name,
     IndexNameFreq.MONTHLY: _get_monthly_index_name,

@@ -2,7 +2,7 @@ from setuptools import setup, find_packages
 
 setup(
     name='es-log-handler',
-    version='0.2.0',
+    version='0.3.0',
     description='Elasticsearch Log Handler ',
     long_description=open('README.md', 'r').read(),
     long_description_content_type="text/markdown",
