@@ -1,15 +1,15 @@
-from enum import Enum
+from enum import IntEnum
 from json import loads, dumps
 from datetime import timedelta, datetime as dt
 from elasticsearch.serializer import JSONSerializer
 
 
-class AuthType(Enum):
+class AuthType(IntEnum):
     NO_AUTH = 0
     BASIC_AUTH = 1
 
 
-class IndexNameFreq(Enum):
+class IndexNameFreq(IntEnum):
     NEVER = 0
     DAILY = 1
     WEEKLY = 2

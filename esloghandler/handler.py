@@ -49,10 +49,10 @@ class ESHandler(Handler):
         self._es_idx_name_func = self.__get_name_func(es_index_name_frequency)
         self._es_add_fields = es_additional_fields
 
-        self._client = es_client
         self._connection_class = connection
         self._connection_timeout = connection_timeout
         self._last_sending_error = True
+        self._client = self.__get_es_client(es_client)
 
         self._backup_file = File(backup_filepath)
 
@@ -86,9 +86,9 @@ class ESHandler(Handler):
 
     # ---
 
-    def __get_es_client(self):
-        if self._client is not None:
-            return self._client
+    def __get_es_client(self, es_client):
+        if es_client is not None:
+            return es_client
 
         conn_params = {
             'hosts': self.hosts,
@@ -100,13 +100,10 @@ class ESHandler(Handler):
         }
 
         if self.auth_type == AuthType.NO_AUTH:
-            self._client = Elasticsearch(**conn_params)
-            return self._client
+            return Elasticsearch(**conn_params)
 
         if self.auth_type == AuthType.BASIC_AUTH:
-            self._client = Elasticsearch(**conn_params,
-                                         http_auth=self.auth_details)
-            return self._client
+            return Elasticsearch(**conn_params, http_auth=self.auth_details)
 
         raise ValueError('Authentication method not supported')
 
@@ -141,8 +138,8 @@ class ESHandler(Handler):
                 self._restore_from_backup()
 
             buffer = self._pop_buffer()
-            eshelpers.bulk(client=self.__get_es_client(),
-                           actions=self.__get_actions(buffer),
+            eshelpers.bulk(actions=self.__get_actions(buffer),
+                           client=self._client,
                            stats_only=True)
         except Exception:
             self._store_to_backup(buffer)

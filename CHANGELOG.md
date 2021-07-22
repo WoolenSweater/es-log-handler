@@ -1,5 +1,9 @@
 # CHANGELOG
 
+### [0.3.1] - 2021-07-22
+
+- Bug fixed. Now the ES client is initialized immediately when the handler is created.
+
 ### [0.3.0] - 2021-07-21
 
 - Second version of the backup mechanism. Now, every time the flush method is called, before reading the buffer and sending, a check occurs. Was there an error when submitting last time and is the service available now. If the check is successful, past records from the backup file are returned to the buffer.
