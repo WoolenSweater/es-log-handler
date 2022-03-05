@@ -1,2 +1,2 @@
 from .handler import ESHandler
-from .utils import AuthType, IndexNameFreq
+from .utils import IndexNameFreq

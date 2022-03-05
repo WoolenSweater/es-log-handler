@@ -1,5 +1,9 @@
 # CHANGELOG
 
+### [0.4.0] - 2022-03-05
+
+- Update for elasticsearch 8.
+
 ### [0.3.1] - 2021-07-22
 
 - Bug fixed. Now the ES client is initialized immediately when the handler is created.

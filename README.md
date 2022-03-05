@@ -15,6 +15,7 @@ This library provides an Elasticsearch logging appender compatible with the pyth
 ### Several big differences:
 
 * Requirement Python >= 3.6
+* **Since version 0.4.0 elasticsearch>=8 is required**
 * No Kerberos and AWS inside (if need, create an Elasticsearch client and pass to the handler)
 * Backup of the log to a file on sending error
 * Log format (example below)
@@ -22,7 +23,7 @@ This library provides an Elasticsearch logging appender compatible with the pyth
 ### Installation
 
 ```bash
-pip install git+https://github.com/WoolenSweater/es-log-handler
+pip install -i https://test.pypi.org/simple/ es-log-handler
 ```
 
 ### Requirements
@@ -73,11 +74,10 @@ If message is dict, dict unpack in root of record:
 import logging
 from esloghandler import ESHandler
 
-log = logging.getLogger("important_info")
+log = logging.getLogger('important_info')
 log.setLevel(logging.DEBUG)
-log.addHandler(ESHandler(hosts=[{'host': 'elstic_host', 'port': 9200}],
-                         auth_type='BASIC_AUTH',
-                         auth_details=('my_login', 'my_pass'),
+log.addHandler(ESHandler('http://localhost:9200',
+                         basic_auth=('my_login', 'my_pass'),
                          es_index_name='app-dev-test-service',
                          es_index_name_frequency='WEEKLY'))
 log.info('Hello World')

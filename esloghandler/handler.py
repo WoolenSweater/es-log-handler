@@ -1,12 +1,11 @@
+from warnings import warn
 from logging import Handler
 from threading import Thread, Event, Lock
 from traceback import format_exception as fmtex
-from elasticsearch import helpers as eshelpers
-from elasticsearch import Elasticsearch, Urllib3HttpConnection
+from elasticsearch import Elasticsearch, helpers as eshelpers
 from esloghandler.utils import (
     INDEX_NAME_FUNCS,
     File,
-    AuthType,
     IndexNameFreq,
     ESSerializer,
     _get_es_datetime_str
@@ -15,14 +14,13 @@ from esloghandler.utils import (
 
 class ESHandler(Handler):
     def __init__(self,
+                 hosts=[{'scheme': 'http', 'host': 'localhost', 'port': 9200}],
                  *,
-                 hosts=[{'host': 'localhost', 'port': 9200}],
-                 auth_type=AuthType.NO_AUTH,
-                 auth_details=None,
-                 use_ssl=False,
+                 debug=False,
+                 basic_auth=None,
+                 bearer_auth=None,
                  verify_ssl=True,
                  buffer_size=1000,
-                 connection=Urllib3HttpConnection,
                  connection_timeout=10,
                  flush_frequency_in_sec=1,
                  es_client=None,
@@ -39,20 +37,17 @@ class ESHandler(Handler):
         Handler.__init__(self)
 
         self.hosts = hosts
-        self.auth_details = auth_details
-        self.auth_type = self.__get_auth_details(auth_type)
-
-        self.use_ssl = use_ssl
+        self.basic_auth = basic_auth
+        self.bearer_auth = bearer_auth
         self.verify_certs = verify_ssl
 
         self._es_idx_name = es_index_name
         self._es_idx_name_func = self.__get_name_func(es_index_name_frequency)
         self._es_add_fields = es_additional_fields
 
-        self._connection_class = connection
-        self._connection_timeout = connection_timeout
         self._last_sending_error = True
-        self._client = self.__get_es_client(es_client)
+        self._connection_timeout = connection_timeout
+        self._client = es_client or self.__create_es_client()
 
         self._backup_file = File(backup_filepath)
 
@@ -64,16 +59,12 @@ class ESHandler(Handler):
         self.__stop_event = Event()
         self.__flush_task = Thread(target=self.__interval_flush, daemon=True)
         self.__flush_task.start()
+        self.__debug = debug
 
     def __get_name_func(self, param):
         if isinstance(param, str):
             return INDEX_NAME_FUNCS[IndexNameFreq[param]]
         return INDEX_NAME_FUNCS[param]
-
-    def __get_auth_details(self, param):
-        if isinstance(param, str):
-            return AuthType[param]
-        return param
 
     def __wait(self):
         self.__stop_event.wait(self.__flush_frequency)
@@ -86,26 +77,13 @@ class ESHandler(Handler):
 
     # ---
 
-    def __get_es_client(self, es_client):
-        if es_client is not None:
-            return es_client
-
-        conn_params = {
-            'hosts': self.hosts,
-            'use_ssl': self.use_ssl,
-            'verify_certs': self.verify_certs,
-            'timeout': self._connection_timeout,
-            'connection_class': self._connection_class,
-            'serializer': ESSerializer()
-        }
-
-        if self.auth_type == AuthType.NO_AUTH:
-            return Elasticsearch(**conn_params)
-
-        if self.auth_type == AuthType.BASIC_AUTH:
-            return Elasticsearch(**conn_params, http_auth=self.auth_details)
-
-        raise ValueError('Authentication method not supported')
+    def __create_es_client(self):
+        return Elasticsearch(hosts=self.hosts,
+                             basic_auth=self.basic_auth,
+                             bearer_auth=self.bearer_auth,
+                             verify_certs=self.verify_certs,
+                             timeout=self._connection_timeout,
+                             serializer=ESSerializer())
 
     def __get_actions(self, buffer):
         for es_record in buffer:
@@ -141,8 +119,10 @@ class ESHandler(Handler):
             eshelpers.bulk(actions=self.__get_actions(buffer),
                            client=self._client,
                            stats_only=True)
-        except Exception:
+        except Exception as exc:
             self._store_to_backup(buffer)
+            if self.__debug:
+                warn(exc)
 
     def emit(self, log_record):
         self.__buffer.append(self._log_record_to_es_fields(log_record))
